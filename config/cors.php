@@ -29,6 +29,7 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    // For an SPA where your users log in, though, you probably need credentials, so make sure to set it to true.
+    'supports_credentials' => true, //
 
 ];
