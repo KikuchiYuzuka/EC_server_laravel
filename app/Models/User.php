@@ -41,6 +41,14 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @method static \Illuminate\Database\Eloquent\Builder|User whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereUpdatedAt($value)
  * @mixin Eloquent
+ * @property string $first_name
+ * @property string $last_name
+ * @property int $is_admin
+ * @method static \Illuminate\Database\Eloquent\Builder|User ambassadors()
+ * @method static \Illuminate\Database\Eloquent\Builder|User whereFirstName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|User whereIsAdmin($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|User whereLastName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|User admins()
  */
 class User extends Authenticatable
 {
@@ -51,5 +59,30 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    public function scopeAdmins($query)
+    {
+        return $query->where('is_admin', 1);
+    }
+
+    public function scopeAmbassadors($query)
+    {
+        return $query->where('is_admin', 0);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class)->where('complete', 1);
+    }
+
+    public function getRevenueAttribute()
+    {
+        return $this->orders->sum(fn(Order $order) => $order->ambassador_revenue);
+    }
+
+    public function getNameAttribute()
+    {
+        return $this->first_name  . ' ' . $this->last_name;
+    }
 
 }

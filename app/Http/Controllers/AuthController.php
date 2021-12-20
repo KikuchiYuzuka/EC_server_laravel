@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateInfoRequest;
+use App\Http\Requests\UpdatePassword;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +21,7 @@ class AuthController extends Controller
             $request->only('first_name', 'last_name', 'email')
         + [
             'password' => Hash::make($request->input('password')),
-            'is_admin' => 1
+            'is_admin' => $request->path() === 'api/admin/register' ? 1 : 0
             ]
         );
 
@@ -34,7 +37,15 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
-        $jwt = $user->createToken('token')->plainTextToken;
+        $adminLogin = $request->path() ===  'api/admin/login';
+        if ($adminLogin && !$user->is_admin) {
+            return response([
+                'error' => 'access Denied!'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $scope = $adminLogin ? 'admin' : 'ambassador';
+        $jwt = $user->createToken('token', [$scope])->plainTextToken;
         $cookie = cookie('jwt', $jwt, 60*24); // 1 day
 
         return response([
@@ -44,7 +55,9 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return $request->user();
+        $user = $request->user();
+
+        return new UserResource($user);
     }
 
     public function logout()
@@ -53,5 +66,26 @@ class AuthController extends Controller
 
         return response([
             'message' => 'success'
-        ])->withCookie($cookie);    }
+        ])->withCookie($cookie);
+    }
+
+    public function updateInfo(UpdateInfoRequest $request)
+    {
+        $user = $request->user();
+
+        $user->update($request->only('first_name', 'last_name', 'email'));
+
+        return response($user, Response::HTTP_ACCEPTED);
+    }
+
+    public function updatePassword(UpdatePassword $request)
+    {
+        $user = $request->user();
+
+        $user->update([
+            'password' => Hash::make($request->input('password'))
+        ]);
+
+        return response($user, Response::HTTP_ACCEPTED);
+    }
 }
