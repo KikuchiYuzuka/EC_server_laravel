@@ -56,9 +56,16 @@ Route::prefix('ambassador')->group(function () {
     Route::get('products/backend', [ProductController::class, 'backend']);
 
     Route::middleware(['auth:sanctum', 'scope.ambassador'])->group(function () {
+        Route::post('links', [LinkController::class, 'store']);
         Route::get('stats', [StatsController::class, 'index']);
         Route::get('rankings', [StatsController::class, 'rankings']);
     });
 });
 
 //Checkout
+Route::prefix('checkout')->group(function () {
+    Route::get('links/{code}', [LinkController::class, 'show']);
+    Route::post('orders', [OrderController::class, 'store']);
+    Route::post('orders/confirm', [OrderController::class, 'confirm']);
+
+});
